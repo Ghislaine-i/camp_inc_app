@@ -5,6 +5,7 @@ import '../../../core/widgets/state_views.dart';
 import '../../incidents/screens/home_screen.dart';
 import '../providers/auth_providers.dart';
 import 'login_screen.dart';
+import 'verify_email_screen.dart';
 
 /// Chooses the screen based on auth state, so no manual navigation is needed
 /// after login/logout.
@@ -19,6 +20,7 @@ class AuthGate extends ConsumerWidget {
       error: (e, _) => Scaffold(body: ErrorView(message: e.toString())),
       data: (user) {
         if (user == null) return const LoginScreen();
+        if (!user.emailVerified) return const VerifyEmailScreen();
         final profile = ref.watch(currentUserProvider);
         return profile.when(
           loading: () => const Scaffold(body: LoadingView()),

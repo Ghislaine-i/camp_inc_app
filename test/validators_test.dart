@@ -33,4 +33,18 @@ void main() {
     expect(Validators.location('  '), isNotNull);
     expect(Validators.location('Block A'), isNull);
   });
+
+  group('aluEmail', () {
+    test('accepts alustudent.com address',
+        () => expect(Validators.aluEmail('a.b@alustudent.com'), isNull));
+    test('accepts alueducation.com address',
+        () => expect(Validators.aluEmail('staff@alueducation.com'), isNull));
+    test('rejects gmail.com address',
+        () => expect(Validators.aluEmail('a@gmail.com'), isNotNull));
+    test('rejects alustudent.org (wrong TLD)',
+        () => expect(Validators.aluEmail('a@alustudent.org'), isNotNull));
+    test('rejects empty', () => expect(Validators.aluEmail(''), isNotNull));
+    test('is case-insensitive',
+        () => expect(Validators.aluEmail('A.B@ALUSTUDENT.COM'), isNull));
+  });
 }

@@ -32,8 +32,15 @@ class _RegisterScreenState extends ConsumerState<RegisterScreen> {
     final ok = await ref
         .read(authControllerProvider.notifier)
         .register(_name.text, _email.text, _password.text);
-    // AuthGate swaps to the home screen; pop this route so it becomes visible.
-    if (ok && mounted) Navigator.of(context).popUntil((r) => r.isFirst);
+    if (ok && mounted) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text('Verification email sent. Check your inbox (and spam).'),
+        ),
+      );
+      // Pop back to AuthGate which will show VerifyEmailScreen.
+      Navigator.of(context).popUntil((r) => r.isFirst);
+    }
   }
 
   @override
@@ -72,8 +79,11 @@ class _RegisterScreenState extends ConsumerState<RegisterScreen> {
                       controller: _email,
                       keyboardType: TextInputType.emailAddress,
                       decoration: const InputDecoration(
-                          labelText: 'Email', prefixIcon: Icon(Icons.email_outlined)),
-                      validator: Validators.email,
+                          labelText: 'ALU Email',
+                          prefixIcon: Icon(Icons.email_outlined),
+                          hintText: 'you@alustudent.com'),
+                      // ALU-only validator on the register screen.
+                      validator: Validators.aluEmail,
                     ),
                     const SizedBox(height: 16),
                     TextFormField(

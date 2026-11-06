@@ -6,17 +6,34 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../../core/constants.dart';
 import '../../../core/providers.dart';
 import '../../auth/providers/auth_providers.dart';
+import '../data/image_repository.dart';
 import '../data/incident_repository.dart';
 import '../models/incident.dart';
 import '../models/incident_filter.dart';
 import '../models/status_event.dart';
 
+/// Provides the Cloudinary image implementation.
+final imageRepositoryProvider = Provider<ImageRepository>((ref) {
+  return CloudinaryImageRepository();
+});
+
 final incidentRepositoryProvider = Provider<IncidentRepository>((ref) {
-  return IncidentRepository(ref.watch(firestoreProvider), ref.watch(storageProvider));
+  return IncidentRepository(
+    ref.watch(firestoreProvider),
+    ref.watch(imageRepositoryProvider),
+  );
 });
 
 /// Real-time stream of every incident (newest first).
+/// Returns an empty list immediately when the user is not signed in or their
+/// email is not yet verified, so the Firestore listener never runs
+/// unauthorised and we avoid permission-denied errors on sign-out.
 final incidentsStreamProvider = StreamProvider<List<Incident>>((ref) {
+  final authValue = ref.watch(authStateProvider);
+  final user = authValue.valueOrNull;
+  if (user == null || !user.emailVerified) {
+    return Stream.value(const <Incident>[]);
+  }
   return ref.watch(incidentRepositoryProvider).watchAll();
 });
 

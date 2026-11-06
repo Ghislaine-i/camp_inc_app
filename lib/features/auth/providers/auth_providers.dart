@@ -34,6 +34,8 @@ String authErrorMessage(Object e) {
     switch (e.code) {
       case 'invalid-email':
         return 'That email address is not valid.';
+      case 'invalid-email-domain':
+        return e.message ?? 'Use your ALU email (@alustudent.com or @alueducation.com).';
       case 'user-not-found':
       case 'wrong-password':
       case 'invalid-credential':
@@ -73,6 +75,12 @@ class AuthController extends AsyncNotifier<void> {
   }
 
   Future<void> signOut() => ref.read(authRepositoryProvider).signOut();
+
+  Future<void> resendVerification() =>
+      ref.read(authRepositoryProvider).resendVerification();
+
+  Future<void> refreshUser() =>
+      ref.read(authRepositoryProvider).refreshUser();
 }
 
 final authControllerProvider =

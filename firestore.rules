@@ -1,46 +1,39 @@
 rules_version = '2';
 service cloud.firestore {
   match /databases/{database}/documents {
-
     function signedIn() { return request.auth != null; }
-    function isStaff() {
+    function aluEmail() {
       return signedIn() &&
+        request.auth.token.email.matches('.*@(alustudent|alueducation)[.]com');
+    }
+    function verified() {
+      return aluEmail() && request.auth.token.email_verified == true;
+    }
+    function isStaff() {
+      return verified() &&
         get(/databases/$(database)/documents/users/$(request.auth.uid)).data.role == 'staff';
     }
-
-    // Users: anyone signed in can read profiles; you can only create your own
-    // profile as a 'student' and you can never change your own role.
     match /users/{uid} {
-      allow read: if signedIn();
-      allow create: if signedIn()
-        && request.auth.uid == uid
+      allow read: if aluEmail();
+      allow create: if aluEmail() && request.auth.uid == uid
         && request.resource.data.role == 'student';
-      allow update: if signedIn()
-        && request.auth.uid == uid
+      allow update: if verified() && request.auth.uid == uid
         && request.resource.data.role == resource.data.role;
       allow delete: if false;
     }
-
     match /incidents/{incidentId} {
-      allow read: if signedIn();
-
-      // Students (any signed-in user) can create reports as themselves,
-      // and a new report must start as 'submitted'.
-      allow create: if signedIn()
+      allow read: if verified();
+      allow create: if verified()
         && request.resource.data.reporterId == request.auth.uid
         && request.resource.data.status == 'submitted'
         && request.resource.data.title is string
         && request.resource.data.title.size() >= 5;
-
-      // Only staff can update, and only the status fields.
       allow update: if isStaff()
         && request.resource.data.diff(resource.data).affectedKeys()
              .hasOnly(['status', 'updatedAt', 'lastNote']);
-
       allow delete: if false;
-
       match /statusHistory/{eventId} {
-        allow read: if signedIn();
+        allow read: if verified();
         allow create: if isStaff();
         allow update, delete: if false;
       }

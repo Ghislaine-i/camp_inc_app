@@ -1,19 +1,19 @@
 import 'dart:io';
 
 import 'package:cloud_firestore/cloud_firestore.dart';
-import 'package:firebase_storage/firebase_storage.dart';
 
 import '../../../core/constants.dart';
 import '../../auth/models/app_user.dart';
 import '../models/incident.dart';
 import '../models/status_event.dart';
+import 'image_repository.dart';
 
-/// All Firestore / Storage access lives here; UI and providers never touch
-/// Firebase directly.
+/// All Firestore / image-upload access lives here; UI and providers never touch
+/// Firebase or Cloudinary directly.
 class IncidentRepository {
-  IncidentRepository(this._db, this._storage);
+  IncidentRepository(this._db, this._images);
   final FirebaseFirestore _db;
-  final FirebaseStorage _storage;
+  final ImageRepository _images;
 
   CollectionReference<Map<String, dynamic>> get _col => _db.collection('incidents');
 
@@ -53,17 +53,11 @@ class IncidentRepository {
     String? imageUrl;
 
     if (image != null) {
-      final ref = _storage.ref('incident_images/${reporter.uid}/${doc.id}.jpg');
-      final task = ref.putFile(image, SettableMetadata(contentType: 'image/jpeg'));
-      final sub = task.snapshotEvents.listen((s) {
-        if (s.totalBytes > 0) onProgress?.call(s.bytesTransferred / s.totalBytes);
-      });
-      try {
-        await task;
-      } finally {
-        await sub.cancel();
-      }
-      imageUrl = await ref.getDownloadURL();
+      imageUrl = await _images.upload(
+        image,
+        pathHint: 'incident_images/${reporter.uid}/${doc.id}.jpg',
+        onProgress: onProgress,
+      );
     }
 
     await doc.set({

@@ -101,7 +101,7 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
                           ? null
                           : () => Navigator.of(context).push(MaterialPageRoute(
                               builder: (_) => const RegisterScreen())),
-                      child: const Text('Create a student account'),
+                      child: const Text('Create an account'),
                     ),
                   ],
                 ),
