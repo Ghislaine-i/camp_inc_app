@@ -46,8 +46,13 @@ class SectionHeader extends StatelessWidget {
 }
 
 class StatusProgressBar extends StatelessWidget {
-  const StatusProgressBar({super.key, required this.incidents});
+  const StatusProgressBar({
+    super.key,
+    required this.incidents,
+    this.emptyMessage = 'Your reports will appear here as you submit them.',
+  });
   final List<Incident> incidents;
+  final String emptyMessage;
 
   @override
   Widget build(BuildContext context) {
@@ -87,7 +92,7 @@ class StatusProgressBar extends StatelessWidget {
         if (total == 0)
           Padding(
             padding: const EdgeInsets.only(top: 12),
-            child: Text('Your reports will appear here as you submit them.',
+            child: Text(emptyMessage,
                 style: Theme.of(context)
                     .textTheme
                     .bodySmall

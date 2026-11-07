@@ -29,6 +29,7 @@ service cloud.firestore {
     match /incidents/{incidentId} {
       allow read: if verified();
       allow create: if verified()
+        && !isStaff()
         && request.resource.data.reporterId == request.auth.uid
         && request.resource.data.status == 'submitted'
         && request.resource.data.title is string

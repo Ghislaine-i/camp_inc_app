@@ -96,6 +96,11 @@ class SubmitController extends AsyncNotifier<void> {
       state = AsyncError('You must be signed in.', StackTrace.current);
       return false;
     }
+    if (user.isStaff) {
+      state = AsyncError(
+          'Staff accounts cannot submit reports.', StackTrace.current);
+      return false;
+    }
     ref.read(uploadProgressProvider.notifier).set(0);
     state = const AsyncLoading();
     state = await AsyncValue.guard(

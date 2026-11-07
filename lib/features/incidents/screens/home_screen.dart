@@ -13,6 +13,7 @@ import '../providers/incident_providers.dart';
 import 'all_reports_tab.dart';
 import 'my_reports_tab.dart';
 import 'submit_incident_screen.dart';
+import 'widgets/staff_home_content.dart';
 
 final homeIndexProvider = StateProvider<int>((ref) => 0);
 
@@ -29,13 +30,22 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
   Widget build(BuildContext context) {
     ref.listen(homeIndexProvider, (_, next) => setState(() => _index = next));
     final isStaff = ref.watch(isStaffProvider);
+    final dashboardIndex = isStaff ? 2 : -1;
     final tabs = <_Tab>[
       const _Tab('Home', Icons.home_rounded, _HomeTab()),
       const _Tab('Reports', Icons.list_alt_rounded, AllReportsTab()),
-      const _Tab('My reports', Icons.person_search_rounded, MyReportsTab()),
+      if (!isStaff)
+        const _Tab('My reports', Icons.person_search_rounded, MyReportsTab()),
       if (isStaff)
         const _Tab('Dashboard', Icons.dashboard_rounded, StaffDashboardTab()),
-      const _Tab('Profile', Icons.account_circle_rounded, ProfileTab()),
+      _Tab(
+        'Profile',
+        Icons.account_circle_rounded,
+        isStaff
+            ? ProfileTab(
+                onOpenDashboard: () => setState(() => _index = dashboardIndex))
+            : const ProfileTab(),
+      ),
     ];
     final index = _index.clamp(0, tabs.length - 1);
     final current = tabs[index];
@@ -67,8 +77,25 @@ class _HomeTab extends ConsumerWidget {
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final user = ref.watch(currentUserProvider).value;
-    final reports = ref.watch(myIncidentsProvider);
+    final isStaff = ref.watch(isStaffProvider);
     final name = user?.name.split(' ').first ?? 'there';
+    if (isStaff) {
+      return SafeArea(
+        child: CustomScrollView(
+          slivers: [
+            SliverToBoxAdapter(
+                child: _Header(name: name, fullName: user?.name ?? '')),
+            SliverToBoxAdapter(
+              child: StaffHomeContent(
+                onSeeAll: () => ref.read(homeIndexProvider.notifier).state = 1,
+              ),
+            ),
+          ],
+        ),
+      );
+    }
+
+    final reports = ref.watch(myIncidentsProvider);
     return AsyncValueView<List<Incident>>(
       value: reports,
       data: (items) {
@@ -101,40 +128,41 @@ class _HomeTab extends ConsumerWidget {
                   ]),
             )),
           )),
-          SliverPadding(
-              padding: const EdgeInsets.fromLTRB(16, 20, 16, 12),
-              sliver: SliverToBoxAdapter(
-                  child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  const SectionHeader('Report an issue'),
-                  GridView.count(
-                    crossAxisCount: 3,
-                    shrinkWrap: true,
-                    physics: const NeverScrollableScrollPhysics(),
-                    crossAxisSpacing: 8,
-                    mainAxisSpacing: 8,
-                    childAspectRatio: 1.1,
-                    children: [
-                      for (final category in IncidentCategory.values)
-                        _CategoryTile(category: category)
-                    ],
-                  ),
-                  const SizedBox(height: 12),
-                  FilledButton.icon(
-                    onPressed: () => Navigator.of(context).push(
-                        MaterialPageRoute(
-                            builder: (_) => const SubmitIncidentScreen())),
-                    icon: const Icon(Icons.add_rounded),
-                    label: const Text('Report a new issue'),
-                  ),
-                  const SizedBox(height: 18),
-                  SectionHeader('Recent activity',
-                      action: 'See all',
-                      onAction: () =>
-                          ref.read(homeIndexProvider.notifier).state = 1),
-                ],
-              ))),
+          if (!isStaff)
+            SliverPadding(
+                padding: const EdgeInsets.fromLTRB(16, 20, 16, 12),
+                sliver: SliverToBoxAdapter(
+                    child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    const SectionHeader('Report an issue'),
+                    GridView.count(
+                      crossAxisCount: 3,
+                      shrinkWrap: true,
+                      physics: const NeverScrollableScrollPhysics(),
+                      crossAxisSpacing: 8,
+                      mainAxisSpacing: 8,
+                      childAspectRatio: 1.1,
+                      children: [
+                        for (final category in IncidentCategory.values)
+                          _CategoryTile(category: category)
+                      ],
+                    ),
+                    const SizedBox(height: 12),
+                    FilledButton.icon(
+                      onPressed: () => Navigator.of(context).push(
+                          MaterialPageRoute(
+                              builder: (_) => const SubmitIncidentScreen())),
+                      icon: const Icon(Icons.add_rounded),
+                      label: const Text('Report a new issue'),
+                    ),
+                    const SizedBox(height: 18),
+                    SectionHeader('Recent activity',
+                        action: 'See all',
+                        onAction: () =>
+                            ref.read(homeIndexProvider.notifier).state = 1),
+                  ],
+                ))),
           if (recent.isEmpty)
             const SliverToBoxAdapter(
                 child: EmptyView(

@@ -7,6 +7,7 @@ import 'package:image_picker/image_picker.dart';
 import '../../../core/constants.dart';
 import '../../../core/validators.dart';
 import '../../../core/theme.dart';
+import '../../auth/providers/auth_providers.dart';
 import '../providers/incident_providers.dart';
 
 class SubmitIncidentScreen extends ConsumerStatefulWidget {
@@ -109,6 +110,21 @@ class _SubmitIncidentScreenState extends ConsumerState<SubmitIncidentScreen> {
     });
     final submitting = ref.watch(submitControllerProvider).isLoading;
     final progress = ref.watch(uploadProgressProvider);
+    if (ref.watch(isStaffProvider)) {
+      return Scaffold(
+        appBar: AppBar(title: const Text('New report')),
+        body: Center(
+          child: Padding(
+            padding: const EdgeInsets.all(24),
+            child: Text(
+              "Staff accounts can't submit reports",
+              textAlign: TextAlign.center,
+              style: Theme.of(context).textTheme.titleMedium,
+            ),
+          ),
+        ),
+      );
+    }
 
     return Scaffold(
       appBar: AppBar(title: const Text('New report')),
