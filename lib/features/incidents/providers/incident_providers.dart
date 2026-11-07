@@ -12,11 +12,6 @@ import '../models/incident.dart';
 import '../models/incident_filter.dart';
 import '../models/status_event.dart';
 
-/// Provides the Cloudinary image implementation.
-final imageRepositoryProvider = Provider<ImageRepository>((ref) {
-  return CloudinaryImageRepository();
-});
-
 final incidentRepositoryProvider = Provider<IncidentRepository>((ref) {
   return IncidentRepository(
     ref.watch(firestoreProvider),
@@ -25,15 +20,7 @@ final incidentRepositoryProvider = Provider<IncidentRepository>((ref) {
 });
 
 /// Real-time stream of every incident (newest first).
-/// Returns an empty list immediately when the user is not signed in or their
-/// email is not yet verified, so the Firestore listener never runs
-/// unauthorised and we avoid permission-denied errors on sign-out.
 final incidentsStreamProvider = StreamProvider<List<Incident>>((ref) {
-  final authValue = ref.watch(authStateProvider);
-  final user = authValue.valueOrNull;
-  if (user == null || !user.emailVerified) {
-    return Stream.value(const <Incident>[]);
-  }
   return ref.watch(incidentRepositoryProvider).watchAll();
 });
 
@@ -52,10 +39,11 @@ class FilterNotifier extends Notifier<IncidentFilter> {
   IncidentFilter build() => const IncidentFilter();
 
   void setQuery(String q) => state = state.copyWith(query: q);
-  void setCategory(IncidentCategory? c) =>
-      state = c == null ? state.copyWith(clearCategory: true) : state.copyWith(category: c);
-  void setStatus(IncidentStatus? s) =>
-      state = s == null ? state.copyWith(clearStatus: true) : state.copyWith(status: s);
+  void setCategory(IncidentCategory? c) => state = c == null
+      ? state.copyWith(clearCategory: true)
+      : state.copyWith(category: c);
+  void setStatus(IncidentStatus? s) => state =
+      s == null ? state.copyWith(clearStatus: true) : state.copyWith(status: s);
   void clear() => state = const IncidentFilter();
 }
 
@@ -65,7 +53,9 @@ final filterProvider =
 /// Derived state: stream + filter -> visible list.
 final filteredIncidentsProvider = Provider<AsyncValue<List<Incident>>>((ref) {
   final filter = ref.watch(filterProvider);
-  return ref.watch(incidentsStreamProvider).whenData((all) => applyFilter(all, filter));
+  return ref
+      .watch(incidentsStreamProvider)
+      .whenData((all) => applyFilter(all, filter));
 });
 
 // ---- Detail ----------------------------------------------------------------
@@ -87,8 +77,8 @@ class UploadProgressNotifier extends Notifier<double> {
   void set(double v) => state = v;
 }
 
-final uploadProgressProvider =
-    NotifierProvider<UploadProgressNotifier, double>(UploadProgressNotifier.new);
+final uploadProgressProvider = NotifierProvider<UploadProgressNotifier, double>(
+    UploadProgressNotifier.new);
 
 class SubmitController extends AsyncNotifier<void> {
   @override
@@ -108,15 +98,17 @@ class SubmitController extends AsyncNotifier<void> {
     }
     ref.read(uploadProgressProvider.notifier).set(0);
     state = const AsyncLoading();
-    state = await AsyncValue.guard(() => ref.read(incidentRepositoryProvider).create(
-          reporter: user,
-          title: title,
-          description: description,
-          category: category,
-          location: location,
-          image: image,
-          onProgress: (p) => ref.read(uploadProgressProvider.notifier).set(p),
-        ));
+    state = await AsyncValue.guard(
+        () => ref.read(incidentRepositoryProvider).create(
+              reporter: user,
+              title: title,
+              description: description,
+              category: category,
+              location: location,
+              image: image,
+              onProgress: (p) =>
+                  ref.read(uploadProgressProvider.notifier).set(p),
+            ));
     return !state.hasError;
   }
 }
@@ -138,16 +130,18 @@ class StatusController extends AsyncNotifier<void> {
     final staff = ref.read(currentUserProvider).value;
     // Client-side guard. The real enforcement is in firestore.rules.
     if (staff == null || !staff.isStaff) {
-      state = AsyncError('Only staff can update incident status.', StackTrace.current);
+      state = AsyncError(
+          'Only staff can update incident status.', StackTrace.current);
       return false;
     }
     state = const AsyncLoading();
-    state = await AsyncValue.guard(() => ref.read(incidentRepositoryProvider).updateStatus(
-          incident: incident,
-          newStatus: newStatus,
-          note: note,
-          staff: staff,
-        ));
+    state = await AsyncValue.guard(
+        () => ref.read(incidentRepositoryProvider).updateStatus(
+              incident: incident,
+              newStatus: newStatus,
+              note: note,
+              staff: staff,
+            ));
     return !state.hasError;
   }
 }

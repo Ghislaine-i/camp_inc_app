@@ -1,6 +1,5 @@
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
-import 'package:flutter/foundation.dart';
 
 import '../../../core/validators.dart';
 import '../models/app_user.dart';
@@ -18,8 +17,6 @@ class AuthRepository {
         email: email.trim(), password: password);
   }
 
-  /// Every self-registered account is a 'student'. Staff accounts are promoted
-  /// manually in the Firebase console (and Firestore rules block self-promotion).
   Future<void> register({
     required String name,
     required String email,
@@ -29,14 +26,19 @@ class AuthRepository {
     if (!Validators.isAluEmail(email)) {
       throw FirebaseAuthException(
         code: 'invalid-email-domain',
-        message:
-            'Use your ALU email (@alustudent.com or @alueducation.com).',
+        message: 'Use your ALU email (@alustudent.com or @alueducation.com).',
       );
     }
 
     final cred = await _auth.createUserWithEmailAndPassword(
         email: email.trim(), password: password);
-    final user = cred.user!;
+    final user = cred.user;
+    if (user == null) {
+      throw FirebaseAuthException(
+        code: 'user-creation-failed',
+        message: 'Account creation did not return a user.',
+      );
+    }
 
     await _db.collection('users').doc(user.uid).set({
       'name': name.trim(),
@@ -57,19 +59,11 @@ class AuthRepository {
 
   /// Reloads the Firebase user and forces a token refresh so that
   /// email_verified is up-to-date in the cached claims.
-  ///
-  /// In debug builds, prints the relevant token claims to the console so
-  /// you can confirm the token has been updated.
-  /// TODO: remove the debugPrint block before submission.
   Future<void> refreshUser() async {
     final u = _auth.currentUser;
     if (u == null) return;
     await u.reload();
-    final result = await _auth.currentUser?.getIdTokenResult(true);
-    if (kDebugMode && result != null) {
-      debugPrint('[TokenDebug] email          : ${result.claims?['email']}');
-      debugPrint('[TokenDebug] email_verified : ${result.claims?['email_verified']}');
-    }
+    await _auth.currentUser?.getIdTokenResult(true);
   }
 
   Stream<AppUser?> watchUser(String uid) {

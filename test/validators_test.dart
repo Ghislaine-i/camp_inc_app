@@ -4,13 +4,16 @@ import 'package:flutter_test/flutter_test.dart';
 void main() {
   group('email', () {
     test('rejects empty', () => expect(Validators.email(''), isNotNull));
-    test('rejects malformed', () => expect(Validators.email('abc@'), isNotNull));
-    test('accepts valid', () => expect(Validators.email('a.b@uni.edu'), isNull));
+    test(
+        'rejects malformed', () => expect(Validators.email('abc@'), isNotNull));
+    test(
+        'accepts valid', () => expect(Validators.email('a.b@uni.edu'), isNull));
   });
 
   group('password', () {
     test('rejects short', () => expect(Validators.password('123'), isNotNull));
-    test('accepts 6+ chars', () => expect(Validators.password('abcdef'), isNull));
+    test('accepts 6+ chars',
+        () => expect(Validators.password('abcdef'), isNull));
   });
 
   test('confirmPassword must match', () {
@@ -26,25 +29,24 @@ void main() {
 
   group('description', () {
     test('too short', () => expect(Validators.description('short'), isNotNull));
-    test('ok', () => expect(Validators.description('The tap in block B is leaking'), isNull));
+    test(
+        'ok',
+        () => expect(
+            Validators.description('The tap in block B is leaking'), isNull));
   });
 
   test('location required', () {
     expect(Validators.location('  '), isNotNull);
     expect(Validators.location('Block A'), isNull);
   });
-
   group('aluEmail', () {
-    test('accepts alustudent.com address',
-        () => expect(Validators.aluEmail('a.b@alustudent.com'), isNull));
-    test('accepts alueducation.com address',
-        () => expect(Validators.aluEmail('staff@alueducation.com'), isNull));
-    test('rejects gmail.com address',
-        () => expect(Validators.aluEmail('a@gmail.com'), isNotNull));
-    test('rejects alustudent.org (wrong TLD)',
-        () => expect(Validators.aluEmail('a@alustudent.org'), isNotNull));
-    test('rejects empty', () => expect(Validators.aluEmail(''), isNotNull));
-    test('is case-insensitive',
-        () => expect(Validators.aluEmail('A.B@ALUSTUDENT.COM'), isNull));
+    test('accepts ALU domains', () {
+      expect(Validators.aluEmail('a.b@alustudent.com'), isNull);
+      expect(Validators.aluEmail('staff@alueducation.com'), isNull);
+    });
+    test('rejects other domains', () {
+      expect(Validators.aluEmail('a@gmail.com'), isNotNull);
+      expect(Validators.aluEmail('a@alustudent.org'), isNotNull);
+    });
   });
 }

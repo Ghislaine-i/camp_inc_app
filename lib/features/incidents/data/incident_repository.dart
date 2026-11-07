@@ -15,13 +15,12 @@ class IncidentRepository {
   final FirebaseFirestore _db;
   final ImageRepository _images;
 
-  CollectionReference<Map<String, dynamic>> get _col => _db.collection('incidents');
+  CollectionReference<Map<String, dynamic>> get _col =>
+      _db.collection('incidents');
 
   Stream<List<Incident>> watchAll() {
-    return _col
-        .orderBy('createdAt', descending: true)
-        .snapshots()
-        .map((s) => s.docs.map((d) => Incident.fromMap(d.id, d.data())).toList());
+    return _col.orderBy('createdAt', descending: true).snapshots().map(
+        (s) => s.docs.map((d) => Incident.fromMap(d.id, d.data())).toList());
   }
 
   Stream<Incident?> watchOne(String id) {
@@ -37,7 +36,8 @@ class IncidentRepository {
         .collection('statusHistory')
         .orderBy('timestamp')
         .snapshots()
-        .map((s) => s.docs.map((d) => StatusEvent.fromMap(d.id, d.data())).toList());
+        .map((s) =>
+            s.docs.map((d) => StatusEvent.fromMap(d.id, d.data())).toList());
   }
 
   Future<void> create({
@@ -49,13 +49,15 @@ class IncidentRepository {
     File? image,
     void Function(double progress)? onProgress,
   }) async {
-    final doc = _col.doc(); // generate the id first so the image path matches it
+    final doc =
+        _col.doc(); // generate the id first so the image path matches it
     String? imageUrl;
 
     if (image != null) {
       imageUrl = await _images.upload(
         image,
-        pathHint: 'incident_images/${reporter.uid}/${doc.id}.jpg',
+        folder: 'incident_images/${reporter.uid}',
+        name: doc.id,
         onProgress: onProgress,
       );
     }

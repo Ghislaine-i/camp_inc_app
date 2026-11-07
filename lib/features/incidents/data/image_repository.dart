@@ -2,85 +2,80 @@ import 'dart:io';
 
 import 'package:dio/dio.dart';
 import 'package:firebase_storage/firebase_storage.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 
-/// Abstract contract for uploading incident images.
+/// Abstraction over "where photos are stored".
+/// The rest of the app depends only on this interface.
 abstract class ImageRepository {
-  /// Uploads [image] and returns its public URL.
-  /// [onProgress] is called with values in [0, 1] as the upload progresses.
+  /// Uploads [file] and returns a public URL to save in Firestore.
   Future<String> upload(
-    File image, {
-    String? pathHint,
+    File file, {
+    required String folder,
+    required String name,
     void Function(double progress)? onProgress,
   });
 }
 
-// ---------------------------------------------------------------------------
-// Cloudinary implementation (primary)
-// ---------------------------------------------------------------------------
-
+/// Active implementation: no billing account required.
 class CloudinaryImageRepository implements ImageRepository {
-  CloudinaryImageRepository({Dio? dio}) : _dio = dio ?? Dio();
+  CloudinaryImageRepository({
+    required this.cloudName,
+    required this.uploadPreset,
+    Dio? dio,
+  }) : _dio = dio ?? Dio();
 
-  static const _cloudName = 'fmhemgxt';
-  static const _uploadPreset = 'campus_incidents';
-  static const _uploadUrl =
-      'https://api.cloudinary.com/v1_1/$_cloudName/image/upload';
-
+  final String cloudName;
+  final String uploadPreset;
   final Dio _dio;
 
   @override
   Future<String> upload(
-    File image, {
-    String? pathHint,
+    File file, {
+    required String folder,
+    required String name,
     void Function(double progress)? onProgress,
   }) async {
-    final formData = FormData.fromMap({
-      'upload_preset': _uploadPreset,
-      'file': await MultipartFile.fromFile(
-        image.path,
-        filename: pathHint ?? image.path.split(Platform.pathSeparator).last,
-      ),
+    final form = FormData.fromMap({
+      'file': await MultipartFile.fromFile(file.path, filename: '$name.jpg'),
+      'upload_preset': uploadPreset,
+      'folder': folder,
     });
 
-    final response = await _dio.post<Map<String, dynamic>>(
-      _uploadUrl,
-      data: formData,
-      onSendProgress: (sent, total) {
-        if (total > 0) {
-          onProgress?.call(sent / total);
-        }
-      },
-    );
-
-    final secureUrl = response.data?['secure_url'] as String?;
-    if (secureUrl == null || secureUrl.isEmpty) {
-      throw Exception('Cloudinary upload succeeded but returned no URL.');
+    try {
+      final res = await _dio.post(
+        'https://api.cloudinary.com/v1_1/$cloudName/image/upload',
+        data: form,
+        onSendProgress: (sent, total) {
+          if (total > 0) onProgress?.call(sent / total);
+        },
+        options: Options(
+          sendTimeout: const Duration(seconds: 30),
+          receiveTimeout: const Duration(seconds: 30),
+        ),
+      );
+      return res.data['secure_url'] as String;
+    } on DioException catch (e) {
+      throw Exception('Photo upload failed: ${e.message}');
     }
-    return secureUrl;
   }
 }
 
-// ---------------------------------------------------------------------------
-// Firebase Storage implementation (alternative / kept for reference)
-// ---------------------------------------------------------------------------
-
+/// Ready for when a Blaze billing account is available.
 class FirebaseStorageImageRepository implements ImageRepository {
   FirebaseStorageImageRepository(this._storage);
-
   final FirebaseStorage _storage;
 
   @override
   Future<String> upload(
-    File image, {
-    String? pathHint,
+    File file, {
+    required String folder,
+    required String name,
     void Function(double progress)? onProgress,
   }) async {
-    final ref = _storage.ref(pathHint ?? 'incident_images/${image.path}');
-    final task = ref.putFile(image, SettableMetadata(contentType: 'image/jpeg'));
+    final ref = _storage.ref('$folder/$name.jpg');
+    final task = ref.putFile(file, SettableMetadata(contentType: 'image/jpeg'));
     final sub = task.snapshotEvents.listen((s) {
-      if (s.totalBytes > 0) {
-        onProgress?.call(s.bytesTransferred / s.totalBytes);
-      }
+      if (s.totalBytes > 0) onProgress?.call(s.bytesTransferred / s.totalBytes);
     });
     try {
       await task;
@@ -90,3 +85,12 @@ class FirebaseStorageImageRepository implements ImageRepository {
     return ref.getDownloadURL();
   }
 }
+
+final imageRepositoryProvider = Provider<ImageRepository>((ref) {
+  // To switch to Firebase Storage once billing is enabled, return:
+  // FirebaseStorageImageRepository(FirebaseStorage.instance)
+  return CloudinaryImageRepository(
+    cloudName: 'fmhemgxt', // from the Cloudinary dashboard
+    uploadPreset: 'campus_incidents', // your unsigned preset
+  );
+});

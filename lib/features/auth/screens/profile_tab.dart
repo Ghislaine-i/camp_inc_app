@@ -1,9 +1,7 @@
-import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../../core/widgets/state_views.dart';
-import '../../incidents/providers/incident_providers.dart';
 import '../providers/auth_providers.dart';
 
 class ProfileTab extends ConsumerWidget {
@@ -26,34 +24,18 @@ class ProfileTab extends ConsumerWidget {
         ),
         const SizedBox(height: 16),
         Text(user.name,
-            textAlign: TextAlign.center, style: Theme.of(context).textTheme.headlineSmall),
+            textAlign: TextAlign.center,
+            style: Theme.of(context).textTheme.headlineSmall),
         Text(user.email, textAlign: TextAlign.center),
         const SizedBox(height: 12),
         Center(
           child: Chip(
-            avatar: Icon(user.isStaff ? Icons.verified_user : Icons.school, size: 18),
+            avatar: Icon(user.isStaff ? Icons.verified_user : Icons.school,
+                size: 18),
             label: Text(user.isStaff ? 'Campus staff' : 'Student'),
           ),
         ),
         const SizedBox(height: 32),
-        // TODO: remove before submission — debug token inspector
-        if (kDebugMode)
-          OutlinedButton.icon(
-            onPressed: () async {
-              await ref.read(authControllerProvider.notifier).refreshUser();
-              ref.invalidate(incidentsStreamProvider);
-              if (context.mounted) {
-                ScaffoldMessenger.of(context).showSnackBar(
-                  const SnackBar(content: Text('Token refreshed — check Debug Console.')),
-                );
-              }
-            },
-            icon: const Icon(Icons.token),
-            style: OutlinedButton.styleFrom(foregroundColor: Colors.deepOrange),
-            label: const Text('[DEBUG] Refresh token & print claims'),
-          ),
-        // end TODO
-        if (kDebugMode) const SizedBox(height: 12),
         OutlinedButton.icon(
           onPressed: () async {
             await ref.read(authControllerProvider.notifier).signOut();

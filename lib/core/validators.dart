@@ -1,12 +1,15 @@
-﻿class Validators {
+class Validators {
   static final RegExp _emailRe = RegExp(r'^[\w.+-]+@[\w-]+(\.[\w-]+)+$');
 
-  /// ALU-only allowed domains (case-insensitive).
-  static const List<String> allowedDomains = ['alustudent.com', 'alueducation.com'];
+  /// Only these ALU domains may register.
+  static const List<String> allowedDomains = [
+    'alustudent.com',
+    'alueducation.com',
+  ];
 
   static bool isAluEmail(String email) {
-    final lower = email.trim().toLowerCase();
-    return allowedDomains.any((d) => lower.endsWith('@$d'));
+    final parts = email.trim().toLowerCase().split('@');
+    return parts.length == 2 && allowedDomains.contains(parts.last);
   }
 
   static String? required(String? v, String label) =>
@@ -18,14 +21,13 @@
     return _emailRe.hasMatch(v!.trim()) ? null : 'Enter a valid email address';
   }
 
-  /// Like [email] but also enforces ALU domains.
+  /// Email must be valid AND belong to an ALU domain.
   static String? aluEmail(String? v) {
-    final r = email(v);
-    if (r != null) return r;
-    if (!isAluEmail(v!)) {
-      return 'Use your ALU email (@alustudent.com or @alueducation.com)';
-    }
-    return null;
+    final base = email(v);
+    if (base != null) return base;
+    return isAluEmail(v!)
+        ? null
+        : 'Use your ALU email (@alustudent.com or @alueducation.com)';
   }
 
   static String? password(String? v) {
