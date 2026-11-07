@@ -6,10 +6,12 @@ import 'package:image_picker/image_picker.dart';
 
 import '../../../core/constants.dart';
 import '../../../core/validators.dart';
+import '../../../core/theme.dart';
 import '../providers/incident_providers.dart';
 
 class SubmitIncidentScreen extends ConsumerStatefulWidget {
-  const SubmitIncidentScreen({super.key});
+  const SubmitIncidentScreen({super.key, this.initialCategory});
+  final IncidentCategory? initialCategory;
 
   @override
   ConsumerState<SubmitIncidentScreen> createState() =>
@@ -25,6 +27,12 @@ class _SubmitIncidentScreenState extends ConsumerState<SubmitIncidentScreen> {
 
   IncidentCategory? _category;
   File? _image;
+
+  @override
+  void initState() {
+    super.initState();
+    _category = widget.initialCategory;
+  }
 
   @override
   void dispose() {
@@ -103,16 +111,69 @@ class _SubmitIncidentScreenState extends ConsumerState<SubmitIncidentScreen> {
     final progress = ref.watch(uploadProgressProvider);
 
     return Scaffold(
-      appBar: AppBar(title: const Text('Report an issue')),
+      appBar: AppBar(title: const Text('New report')),
+      bottomNavigationBar: SafeArea(
+        minimum: const EdgeInsets.fromLTRB(16, 8, 16, 12),
+        child: FilledButton.icon(
+          onPressed: submitting ? null : _submit,
+          icon: submitting
+              ? const SizedBox(
+                  height: 18,
+                  width: 18,
+                  child: CircularProgressIndicator(strokeWidth: 2))
+              : const Icon(Icons.send_rounded),
+          label: const Text('Submit report'),
+        ),
+      ),
       body: AbsorbPointer(
         absorbing: submitting,
         child: SingleChildScrollView(
-          padding: const EdgeInsets.all(16),
+          padding: const EdgeInsets.fromLTRB(16, 8, 16, 20),
           child: Form(
             key: _formKey,
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.stretch,
               children: [
+                Text('Category',
+                    style: Theme.of(context)
+                        .textTheme
+                        .labelLarge
+                        ?.copyWith(color: AppColors.muted)),
+                const SizedBox(height: 8),
+                FormField<IncidentCategory>(
+                  initialValue: _category,
+                  validator: (c) =>
+                      c == null ? 'Please choose a category' : null,
+                  builder: (field) => Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Wrap(
+                          spacing: 8,
+                          runSpacing: 4,
+                          children: [
+                            for (final c in IncidentCategory.values)
+                              ChoiceChip(
+                                avatar: Icon(c.icon, size: 18),
+                                label: Text(c.label),
+                                selected: _category == c,
+                                onSelected: (_) {
+                                  setState(() => _category = c);
+                                  field.didChange(c);
+                                },
+                              )
+                          ],
+                        ),
+                        if (field.hasError)
+                          Padding(
+                              padding: const EdgeInsets.only(top: 6, left: 12),
+                              child: Text(field.errorText!,
+                                  style: TextStyle(
+                                      color:
+                                          Theme.of(context).colorScheme.error,
+                                      fontSize: 12))),
+                      ]),
+                ),
+                const SizedBox(height: 16),
                 TextFormField(
                   controller: _title,
                   maxLength: 80,
@@ -120,26 +181,6 @@ class _SubmitIncidentScreenState extends ConsumerState<SubmitIncidentScreen> {
                   decoration: const InputDecoration(labelText: 'Title'),
                   validator: Validators.title,
                 ),
-                const SizedBox(height: 8),
-                DropdownButtonFormField<IncidentCategory>(
-                  initialValue: _category,
-                  decoration: const InputDecoration(labelText: 'Category'),
-                  items: [
-                    for (final c in IncidentCategory.values)
-                      DropdownMenuItem(
-                        value: c,
-                        child: Row(children: [
-                          Icon(c.icon, size: 20),
-                          const SizedBox(width: 8),
-                          Text(c.label),
-                        ]),
-                      ),
-                  ],
-                  onChanged: (c) => setState(() => _category = c),
-                  validator: (c) =>
-                      c == null ? 'Please choose a category' : null,
-                ),
-                const SizedBox(height: 16),
                 TextFormField(
                   controller: _location,
                   decoration: const InputDecoration(
@@ -179,10 +220,25 @@ class _SubmitIncidentScreenState extends ConsumerState<SubmitIncidentScreen> {
                     ],
                   )
                 else
-                  OutlinedButton.icon(
-                    onPressed: _showPickerSheet,
-                    icon: const Icon(Icons.add_a_photo_outlined),
-                    label: const Text('Attach a photo (optional)'),
+                  InkWell(
+                    onTap: _showPickerSheet,
+                    borderRadius: BorderRadius.circular(14),
+                    child: Container(
+                      height: 110,
+                      decoration: BoxDecoration(
+                        border: Border.all(color: AppColors.outline),
+                        borderRadius: BorderRadius.circular(14),
+                        color: AppColors.surface,
+                      ),
+                      child: const Column(
+                          mainAxisAlignment: MainAxisAlignment.center,
+                          children: [
+                            Icon(Icons.add_a_photo_rounded,
+                                color: AppColors.primary, size: 28),
+                            SizedBox(height: 6),
+                            Text('Add a photo (optional)'),
+                          ]),
+                    ),
                   ),
                 const SizedBox(height: 24),
                 if (submitting && _image != null) ...[
@@ -194,16 +250,6 @@ class _SubmitIncidentScreenState extends ConsumerState<SubmitIncidentScreen> {
                       textAlign: TextAlign.center),
                   const SizedBox(height: 12),
                 ],
-                FilledButton.icon(
-                  onPressed: submitting ? null : _submit,
-                  icon: submitting
-                      ? const SizedBox(
-                          height: 18,
-                          width: 18,
-                          child: CircularProgressIndicator(strokeWidth: 2))
-                      : const Icon(Icons.send),
-                  label: const Text('Submit report'),
-                ),
               ],
             ),
           ),

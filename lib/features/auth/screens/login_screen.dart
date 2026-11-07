@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../../core/validators.dart';
+import '../../../core/theme.dart';
 import '../providers/auth_providers.dart';
 import 'register_screen.dart';
 
@@ -36,8 +37,8 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
   Widget build(BuildContext context) {
     ref.listen(authControllerProvider, (prev, next) {
       if (next.hasError) {
-        ScaffoldMessenger.of(context)
-            .showSnackBar(SnackBar(content: Text(authErrorMessage(next.error!))));
+        ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(content: Text(authErrorMessage(next.error!))));
       }
     });
     final loading = ref.watch(authControllerProvider).isLoading;
@@ -55,53 +56,81 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
                   mainAxisSize: MainAxisSize.min,
                   crossAxisAlignment: CrossAxisAlignment.stretch,
                   children: [
-                    Icon(Icons.report_problem_rounded,
-                        size: 72, color: Theme.of(context).colorScheme.primary),
-                    const SizedBox(height: 12),
-                    Text('Campus Reports',
-                        textAlign: TextAlign.center,
-                        style: Theme.of(context).textTheme.headlineMedium),
-                    const SizedBox(height: 4),
-                    const Text('Report issues. Track fixes.',
-                        textAlign: TextAlign.center),
-                    const SizedBox(height: 32),
-                    TextFormField(
-                      controller: _email,
-                      keyboardType: TextInputType.emailAddress,
-                      decoration: const InputDecoration(
-                          labelText: 'Email', prefixIcon: Icon(Icons.email_outlined)),
-                      validator: Validators.email,
+                    Container(
+                      padding: const EdgeInsets.all(16),
+                      decoration: const BoxDecoration(
+                        color: AppColors.primaryContainer,
+                        shape: BoxShape.circle,
+                      ),
+                      child: const Icon(Icons.report_problem_rounded,
+                          size: 40, color: AppColors.primary),
                     ),
                     const SizedBox(height: 16),
-                    TextFormField(
-                      controller: _password,
-                      obscureText: _obscure,
-                      decoration: InputDecoration(
-                        labelText: 'Password',
-                        prefixIcon: const Icon(Icons.lock_outline),
-                        suffixIcon: IconButton(
-                          icon: Icon(_obscure ? Icons.visibility : Icons.visibility_off),
-                          onPressed: () => setState(() => _obscure = !_obscure),
+                    Text('Campus incident reporting',
+                        textAlign: TextAlign.center,
+                        style:
+                            Theme.of(context).textTheme.headlineSmall?.copyWith(
+                                  fontWeight: FontWeight.w800,
+                                  color: AppColors.text,
+                                )),
+                    const SizedBox(height: 4),
+                    const Text('A simpler way to keep campus moving.',
+                        textAlign: TextAlign.center),
+                    const SizedBox(height: 24),
+                    Card(
+                      child: Padding(
+                        padding: const EdgeInsets.all(16),
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.stretch,
+                          children: [
+                            TextFormField(
+                              controller: _email,
+                              keyboardType: TextInputType.emailAddress,
+                              decoration: const InputDecoration(
+                                  labelText: 'Email',
+                                  prefixIcon: Icon(Icons.email_outlined)),
+                              validator: Validators.email,
+                            ),
+                            const SizedBox(height: 16),
+                            TextFormField(
+                              controller: _password,
+                              obscureText: _obscure,
+                              decoration: InputDecoration(
+                                labelText: 'Password',
+                                prefixIcon: const Icon(Icons.lock_outline),
+                                suffixIcon: IconButton(
+                                  icon: Icon(_obscure
+                                      ? Icons.visibility
+                                      : Icons.visibility_off),
+                                  onPressed: () =>
+                                      setState(() => _obscure = !_obscure),
+                                ),
+                              ),
+                              validator: Validators.password,
+                            ),
+                            const SizedBox(height: 20),
+                            FilledButton(
+                              onPressed: loading ? null : _submit,
+                              child: loading
+                                  ? const SizedBox(
+                                      height: 20,
+                                      width: 20,
+                                      child: CircularProgressIndicator(
+                                          strokeWidth: 2))
+                                  : const Text('Sign in'),
+                            ),
+                            TextButton(
+                              onPressed: loading
+                                  ? null
+                                  : () => Navigator.of(context).push(
+                                      MaterialPageRoute(
+                                          builder: (_) =>
+                                              const RegisterScreen())),
+                              child: const Text('Create an account'),
+                            ),
+                          ],
                         ),
                       ),
-                      validator: Validators.password,
-                    ),
-                    const SizedBox(height: 24),
-                    FilledButton(
-                      onPressed: loading ? null : _submit,
-                      child: loading
-                          ? const SizedBox(
-                              height: 20,
-                              width: 20,
-                              child: CircularProgressIndicator(strokeWidth: 2))
-                          : const Text('Sign in'),
-                    ),
-                    TextButton(
-                      onPressed: loading
-                          ? null
-                          : () => Navigator.of(context).push(MaterialPageRoute(
-                              builder: (_) => const RegisterScreen())),
-                      child: const Text('Create an account'),
                     ),
                   ],
                 ),

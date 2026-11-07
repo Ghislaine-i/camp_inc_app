@@ -5,9 +5,9 @@ import '../../../core/constants.dart';
 import '../../../core/format.dart';
 import '../../../core/widgets/state_views.dart';
 import '../../../core/widgets/status_badge.dart';
+import '../../../core/widgets/app_widgets.dart';
 import '../../auth/providers/auth_providers.dart';
 import '../models/incident.dart';
-import '../models/status_event.dart';
 import '../providers/incident_providers.dart';
 
 class IncidentDetailScreen extends ConsumerWidget {
@@ -59,24 +59,35 @@ class _Body extends ConsumerWidget {
     final theme = Theme.of(context);
 
     return ListView(
-      padding: const EdgeInsets.only(bottom: 96),
+      padding: const EdgeInsets.fromLTRB(16, 8, 16, 96),
       children: [
         if (incident.imageUrl != null)
-          Image.network(
-            incident.imageUrl!,
-            height: 240,
-            width: double.infinity,
-            fit: BoxFit.cover,
-            loadingBuilder: (c, child, p) => p == null
-                ? child
-                : const SizedBox(height: 240, child: LoadingView()),
-            errorBuilder: (_, __, ___) => const SizedBox(
-                height: 120,
-                child: EmptyView(
-                    icon: Icons.broken_image, message: 'Photo unavailable')),
-          ),
+          ClipRRect(
+            borderRadius: BorderRadius.circular(14),
+            child: Image.network(
+              incident.imageUrl!,
+              height: 240,
+              width: double.infinity,
+              fit: BoxFit.cover,
+              loadingBuilder: (c, child, p) => p == null
+                  ? child
+                  : const SizedBox(height: 240, child: LoadingView()),
+              errorBuilder: (_, __, ___) => const SizedBox(
+                  height: 120,
+                  child: EmptyView(
+                      icon: Icons.broken_image, message: 'Photo unavailable')),
+            ),
+          )
+        else
+          Container(
+              height: 180,
+              decoration: BoxDecoration(
+                  color: theme.colorScheme.primaryContainer,
+                  borderRadius: BorderRadius.circular(14)),
+              child: Icon(incident.category.icon,
+                  size: 64, color: theme.colorScheme.primary)),
         Padding(
-          padding: const EdgeInsets.all(16),
+          padding: const EdgeInsets.symmetric(vertical: 18),
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
@@ -90,27 +101,59 @@ class _Body extends ConsumerWidget {
                   StatusBadge(status: incident.status),
                 ],
               ),
+              const SizedBox(height: 16),
+              Card(
+                  child: Padding(
+                      padding: const EdgeInsets.all(16),
+                      child: Column(children: [
+                        _InfoRow(
+                            icon: incident.category.icon,
+                            label: 'Category',
+                            value: incident.category.label),
+                        _InfoRow(
+                            icon: Icons.place_rounded,
+                            label: 'Location',
+                            value: incident.location),
+                        _InfoRow(
+                            icon: Icons.schedule_rounded,
+                            label: 'Submitted',
+                            value: formatDate(incident.createdAt)),
+                        _InfoRow(
+                            icon: Icons.person_rounded,
+                            label: 'Reported by',
+                            value: incident.reporterName),
+                      ]))),
               const SizedBox(height: 12),
-              Wrap(spacing: 8, children: [
-                Chip(
-                  avatar: Icon(incident.category.icon, size: 18),
-                  label: Text(incident.category.label),
-                ),
-                Chip(
-                  avatar: const Icon(Icons.place_outlined, size: 18),
-                  label: Text(incident.location),
-                ),
-              ]),
+              Card(
+                  child: Padding(
+                      padding: const EdgeInsets.all(16),
+                      child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Text('Description',
+                                style: theme.textTheme.titleMedium
+                                    ?.copyWith(fontWeight: FontWeight.w700)),
+                            const SizedBox(height: 8),
+                            Text(incident.description,
+                                style: theme.textTheme.bodyLarge),
+                          ]))),
               const SizedBox(height: 12),
-              Text(incident.description, style: theme.textTheme.bodyLarge),
-              const SizedBox(height: 12),
-              Text(
-                  'Reported by ${incident.reporterName} on ${formatDate(incident.createdAt)}',
-                  style: theme.textTheme.bodySmall),
-              const Divider(height: 32),
-              Text('Status timeline', style: theme.textTheme.titleMedium),
-              const SizedBox(height: 12),
-              _Timeline(incident: incident, history: history),
+              Card(
+                  child: Padding(
+                      padding: const EdgeInsets.all(16),
+                      child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Text('Progress',
+                                style: theme.textTheme.titleMedium
+                                    ?.copyWith(fontWeight: FontWeight.w700)),
+                            const SizedBox(height: 16),
+                            StatusStepper(
+                                incident: incident,
+                                history: history.value ?? const []),
+                            if (history.hasError)
+                              const Text('Could not load the full history.'),
+                          ]))),
             ],
           ),
         ),
@@ -119,99 +162,28 @@ class _Body extends ConsumerWidget {
   }
 }
 
-class _Timeline extends StatelessWidget {
-  const _Timeline({required this.incident, required this.history});
-  final Incident incident;
-  final AsyncValue<List<StatusEvent>> history;
-
+class _InfoRow extends StatelessWidget {
+  const _InfoRow(
+      {required this.icon, required this.label, required this.value});
+  final IconData icon;
+  final String label;
+  final String value;
   @override
-  Widget build(BuildContext context) {
-    final events = history.value ?? const <StatusEvent>[];
-    final entries = <_Entry>[
-      _Entry(IncidentStatus.submitted, 'Report submitted',
-          'by ${incident.reporterName}', incident.createdAt),
-      for (final e in events)
-        _Entry(
-          e.newStatus,
-          'Marked "${e.newStatus.label}"',
-          e.note.isEmpty
-              ? 'by ${e.changedByName}'
-              : '${e.note}\n— ${e.changedByName}',
-          e.timestamp,
-        ),
-    ];
-
-    return Column(
-      children: [
-        for (var i = 0; i < entries.length; i++)
-          _TimelineTile(entry: entries[i], isLast: i == entries.length - 1),
-        if (history.hasError)
-          const Padding(
-            padding: EdgeInsets.only(top: 8),
-            child: Text('Could not load the full history.'),
-          ),
-      ],
-    );
-  }
-}
-
-class _Entry {
-  const _Entry(this.status, this.title, this.subtitle, this.time);
-  final IncidentStatus status;
-  final String title;
-  final String subtitle;
-  final DateTime time;
-}
-
-class _TimelineTile extends StatelessWidget {
-  const _TimelineTile({required this.entry, required this.isLast});
-  final _Entry entry;
-  final bool isLast;
-
-  @override
-  Widget build(BuildContext context) {
-    return IntrinsicHeight(
-      child: Row(
-        crossAxisAlignment: CrossAxisAlignment.stretch,
-        children: [
-          SizedBox(
-            width: 24,
-            child: Column(
-              children: [
-                Container(
-                  width: 14,
-                  height: 14,
-                  margin: const EdgeInsets.only(top: 4),
-                  decoration: BoxDecoration(
-                      color: entry.status.color, shape: BoxShape.circle),
-                ),
-                if (!isLast)
-                  Expanded(
-                      child: Container(
-                          width: 2, color: Theme.of(context).dividerColor)),
-              ],
-            ),
-          ),
-          const SizedBox(width: 8),
+  Widget build(BuildContext context) => Padding(
+        padding: const EdgeInsets.only(bottom: 12),
+        child: Row(children: [
+          Icon(icon, size: 20, color: Theme.of(context).colorScheme.primary),
+          const SizedBox(width: 12),
+          Text('$label  ', style: Theme.of(context).textTheme.bodySmall),
           Expanded(
-            child: Padding(
-              padding: const EdgeInsets.only(bottom: 16),
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Text(entry.title,
-                      style: const TextStyle(fontWeight: FontWeight.w600)),
-                  Text(entry.subtitle),
-                  Text(formatDate(entry.time),
-                      style: Theme.of(context).textTheme.labelSmall),
-                ],
-              ),
-            ),
+            child: Text(value,
+                textAlign: TextAlign.end,
+                maxLines: 2,
+                overflow: TextOverflow.ellipsis,
+                style: const TextStyle(fontWeight: FontWeight.w600)),
           ),
-        ],
-      ),
-    );
-  }
+        ]),
+      );
 }
 
 /// Only reachable for staff (button is hidden otherwise, the controller

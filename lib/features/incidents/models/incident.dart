@@ -47,5 +47,6 @@ class Incident {
       );
 
   // serverTimestamp() is null locally until the server confirms the write.
-  static DateTime _ts(dynamic v) => v is Timestamp ? v.toDate() : DateTime.now();
+  static DateTime _ts(dynamic v) =>
+      v is Timestamp ? v.toDate() : DateTime.now();
 }

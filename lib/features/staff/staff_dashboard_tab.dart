@@ -16,7 +16,8 @@ class StaffDashboardTab extends ConsumerWidget {
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     if (!ref.watch(isStaffProvider)) {
-      return const EmptyView(icon: Icons.lock_outline, message: 'Staff access only.');
+      return const EmptyView(
+          icon: Icons.lock_outline, message: 'Staff access only.');
     }
     final incidents = ref.watch(incidentsStreamProvider);
 
@@ -29,7 +30,9 @@ class StaffDashboardTab extends ConsumerWidget {
             s: list.where((i) => i.status == s).length,
         };
         // Oldest unresolved reports first = what needs attention most.
-        final attention = list.where((i) => i.status == IncidentStatus.submitted).toList()
+        final attention = list
+            .where((i) => i.status == IncidentStatus.submitted)
+            .toList()
           ..sort((a, b) => a.createdAt.compareTo(b.createdAt));
 
         return ListView(
@@ -59,7 +62,8 @@ class StaffDashboardTab extends ConsumerWidget {
               const Padding(
                 padding: EdgeInsets.all(24),
                 child: EmptyView(
-                    icon: Icons.check_circle_outline, message: 'Nothing waiting. Nice work!'),
+                    icon: Icons.check_circle_outline,
+                    message: 'Nothing waiting. Nice work!'),
               )
             else
               for (final i in attention) IncidentCard(incident: i),
@@ -78,20 +82,21 @@ class _StatCard extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Card(
-      child: Padding(
-        padding: const EdgeInsets.symmetric(horizontal: 16),
-        child: Row(
-          children: [
+      clipBehavior: Clip.antiAlias,
+      child: Column(crossAxisAlignment: CrossAxisAlignment.stretch, children: [
+        Container(height: 4, color: status.color),
+        Padding(
+          padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
+          child:
+              Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
             Text('$count',
-                style: Theme.of(context)
-                    .textTheme
-                    .headlineMedium
-                    ?.copyWith(color: status.color, fontWeight: FontWeight.bold)),
-            const SizedBox(width: 12),
-            Expanded(child: Text(status.label)),
-          ],
+                style: Theme.of(context).textTheme.headlineSmall?.copyWith(
+                    color: status.color, fontWeight: FontWeight.bold)),
+            const SizedBox(height: 3),
+            Text(status.label, maxLines: 1, overflow: TextOverflow.ellipsis),
+          ]),
         ),
-      ),
+      ]),
     );
   }
 }

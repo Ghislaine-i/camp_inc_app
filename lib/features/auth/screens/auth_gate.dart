@@ -52,7 +52,8 @@ class _ProfileMissing extends ConsumerWidget {
               const Text('Setting up your profile...'),
               const SizedBox(height: 16),
               TextButton(
-                onPressed: () => ref.read(authControllerProvider.notifier).signOut(),
+                onPressed: () =>
+                    ref.read(authControllerProvider.notifier).signOut(),
                 child: const Text('Sign out'),
               ),
             ],

@@ -8,7 +8,8 @@ class IncidentFilter {
   final IncidentCategory? category;
   final IncidentStatus? status;
 
-  bool get isActive => query.trim().isNotEmpty || category != null || status != null;
+  bool get isActive =>
+      query.trim().isNotEmpty || category != null || status != null;
 
   IncidentFilter copyWith({
     String? query,

@@ -3,6 +3,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../incidents/providers/incident_providers.dart';
 import '../providers/auth_providers.dart';
+import '../../../core/theme.dart';
 
 /// Shown to users who have registered but not yet verified their email.
 class VerifyEmailScreen extends ConsumerStatefulWidget {
@@ -76,8 +77,15 @@ class _VerifyEmailScreenState extends ConsumerState<VerifyEmailScreen> {
             child: Column(
               mainAxisSize: MainAxisSize.min,
               children: [
-                const Icon(Icons.mark_email_unread_outlined,
-                    size: 72, color: Colors.orange),
+                Container(
+                  padding: const EdgeInsets.all(18),
+                  decoration: const BoxDecoration(
+                    color: AppColors.primaryContainer,
+                    shape: BoxShape.circle,
+                  ),
+                  child: const Icon(Icons.mark_email_unread_rounded,
+                      size: 48, color: AppColors.primary),
+                ),
                 const SizedBox(height: 24),
                 Text(
                   'Verify your email',

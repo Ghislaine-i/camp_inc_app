@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'theme.dart';
 
 enum UserRole {
   student,
@@ -9,13 +10,13 @@ enum UserRole {
 }
 
 enum IncidentCategory {
-  water('water', 'Water shortage', Icons.water_drop),
-  electricity('electricity', 'Electricity outage', Icons.bolt),
-  facilities('facilities', 'Broken facilities', Icons.build),
-  furniture('furniture', 'Damaged furniture', Icons.chair),
-  sanitation('sanitation', 'Sanitation', Icons.cleaning_services),
-  safety('safety', 'Safety concern', Icons.shield),
-  other('other', 'Other', Icons.report_problem);
+  water('water', 'Water shortage', Icons.water_drop_rounded),
+  electricity('electricity', 'Electricity outage', Icons.bolt_rounded),
+  facilities('facilities', 'Broken facilities', Icons.build_rounded),
+  furniture('furniture', 'Damaged furniture', Icons.chair_rounded),
+  sanitation('sanitation', 'Sanitation', Icons.cleaning_services_rounded),
+  safety('safety', 'Safety concern', Icons.shield_rounded),
+  other('other', 'Other', Icons.report_problem_rounded);
 
   const IncidentCategory(this.value, this.label, this.icon);
   final String value;
@@ -27,10 +28,10 @@ enum IncidentCategory {
 }
 
 enum IncidentStatus {
-  submitted('submitted', 'Submitted', Colors.blueGrey),
-  underReview('under_review', 'Under review', Colors.orange),
-  inProgress('in_progress', 'In progress', Colors.blue),
-  resolved('resolved', 'Resolved', Colors.green);
+  submitted('submitted', 'Submitted', AppColors.submitted),
+  underReview('under_review', 'Under review', AppColors.underReview),
+  inProgress('in_progress', 'In progress', AppColors.inProgress),
+  resolved('resolved', 'Resolved', AppColors.resolved);
 
   const IncidentStatus(this.value, this.label, this.color);
   final String value;
